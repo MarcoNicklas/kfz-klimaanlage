@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Klimaanlage interaktiv</title>
+<style>
+:root{
+  --navy:#1d2b3a; --navy2:#26384b; --teal:#2a9d8f; --teal2:#e3f4f2;
+  --hd:#e63946; --hdl:#f4a261; --nd:#2f80ed; --ndl:#8ecae6;
+  --bg:#f4f6f8; --card:#ffffff; --ink:#1f2933; --mut:#5f6b7a; --line:#d9e0e6;
+  --ok:#2e7d32; --okbg:#e8f5e9; --bad:#c62828; --badbg:#fdecea; --warn:#b26a00; --warnbg:#fff4e0;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+header{background:var(--navy);color:#fff;padding:14px 16px 0}
+.hwrap{max-width:1200px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;border-radius:50%;background:var(--teal);display:grid;place-items:center;font-size:24px;flex:none}
+h1{font-size:22px;margin:0;line-height:1.2}
+.sub{color:#b8c7d6;font-size:13px}
+nav{display:flex;gap:4px;margin-top:12px;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:none;border:0;background:transparent;color:#c9d6e2;padding:10px 14px;font:600 15px system-ui,sans-serif;border-radius:10px 10px 0 0;cursor:pointer}
+nav button.on{background:var(--bg);color:var(--navy)}
+main{max-width:1200px;margin:0 auto;padding:16px}
+section{display:none}
+section.on{display:block}
+.grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.card h2{font-size:18px;margin:0 0 8px}
+.card h3{font-size:15px;margin:12px 0 6px}
+.mut{color:var(--mut);font-size:14px}
+svg{display:block;width:100%;height:auto}
+.ctrl{display:grid;gap:10px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+label.sl{display:grid;grid-template-columns:150px 1fr 64px;align-items:center;gap:8px;font-size:14px}
+@media (max-width:480px){label.sl{grid-template-columns:1fr 64px}label.sl span:first-child{grid-column:1/3}}
+input[type=range]{width:100%;accent-color:var(--teal)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:7px 12px;font:600 14px system-ui,sans-serif;cursor:pointer;color:var(--ink)}
+.seg button.on{background:var(--teal);color:#fff}
+.btn{border:0;background:var(--teal);color:#fff;padding:9px 14px;border-radius:10px;font:600 14px system-ui,sans-serif;cursor:pointer}
+.btn:hover{filter:brightness(1.07)}
+.btn.sec{background:#fff;color:var(--navy);border:1px solid var(--line)}
+.btn.dark{background:var(--navy)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.vals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.val{background:var(--bg);border-radius:10px;padding:8px 10px}
+.val b{display:block;font-size:20px}
+.val span{font-size:12px;color:var(--mut)}
+.gauges{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.info{border-left:5px solid var(--teal);background:var(--teal2);padding:10px 12px;border-radius:8px;font-size:15px}
+.info h4{margin:0 0 4px;font-size:16px}
+.msg{padding:10px 12px;border-radius:10px;font-size:15px;margin-top:8px}
+.msg.ok{background:var(--okbg);color:var(--ok)}
+.msg.bad{background:var(--badbg);color:var(--bad)}
+.msg.warn{background:var(--warnbg);color:var(--warn)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mut);margin-top:6px}
+.dot{display:inline-block;width:11px;height:11px;border-radius:50%;vertical-align:-1px;margin-right:4px}
+.tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tools button{text-align:left;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;cursor:pointer;font:14px system-ui,sans-serif;color:var(--ink)}
+.tools button small{display:block;color:var(--mut);font-size:12px}
+.tools button.used{background:var(--bg)}
+.log{max-height:240px;overflow:auto;font-size:14px;display:grid;gap:6px}
+.log div{background:var(--bg);border-radius:8px;padding:6px 9px}
+.opts{display:grid;gap:6px}
+.opts button{text-align:left;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 11px;cursor:pointer;font:14px system-ui,sans-serif;color:var(--ink)}
+.opts button:hover{border-color:var(--teal)}
+.opts button.right{background:var(--okbg);border-color:var(--ok)}
+.opts button.wrong{background:var(--badbg);border-color:var(--bad)}
+table.t{border-collapse:collapse;width:100%;font-size:14px}
+table.t th,table.t td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+table.t th{background:var(--bg)}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;background:var(--bg);color:var(--mut)}
+.pill.hd{background:#fde4e6;color:var(--hd)} .pill.nd{background:#e1edfd;color:var(--nd)}
+.screen{background:#0f1b26;color:#7ff5c8;font:600 15px ui-monospace,Menlo,Consolas,monospace;border-radius:12px;padding:12px 14px;min-height:150px;white-space:pre-wrap}
+.screen .big{font-size:30px;color:#fff;display:block;margin:4px 0}
+.steps{display:grid;gap:6px}
+.steps button{text-align:left;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 11px;cursor:pointer;font:14px system-ui,sans-serif}
+.steps button.done{background:var(--okbg);border-color:var(--ok);color:var(--ok);cursor:default}
+.inp{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.inp input{width:110px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:16px system-ui,sans-serif}
+.bars{display:grid;gap:8px}
+.bar{display:grid;grid-template-columns:90px 1fr 70px;gap:8px;align-items:center;font-size:14px}
+.bar .tr{background:var(--bg);border-radius:6px;height:18px;overflow:hidden}
+.bar .fi{height:100%;border-radius:6px}
+.rf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:700px){.rf{grid-template-columns:1fr}}
+.rf .card{border-top:6px solid var(--teal)}
+.news{border:1px solid #f1c48a;background:#fff9f0;border-radius:14px;padding:12px 16px}
+.news h3{margin:0 0 6px;color:var(--warn)}
+.news li{margin:4px 0}
+a{color:#16707f}
+.qprog{height:8px;background:var(--bg);border-radius:6px;overflow:hidden;margin:6px 0 12px}
+.qprog div{height:100%;background:var(--teal);width:0}
+footer{max-width:1200px;margin:0 auto;padding:8px 16px 28px;color:var(--mut);font-size:12px}
+.hide{display:none!important}
+.clickable{cursor:pointer}
+.clickable:hover .hl{stroke:#ffd166;stroke-width:4}
+</style>
+</head>
+<body>
+<header><div class="hwrap">
+  <div class="brand"><div class="logo">❄️</div>
+    <div><h1>Klimaanlage interaktiv</h1>
+    <div class="sub">Kältemittelkreislauf · Diagnose · Klimaservice · Kältemittel – Lernfeld 9, Kfz-Mechatronik</div></div></div>
+  <nav id="nav">
+    <button data-t="kreis" class="on">1 Kreislauf</button>
+    <button data-t="diag">2 Diagnose-Werkstatt</button>
+    <button data-t="serv">3 Klimaservice</button>
+    <button data-t="km">4 Kältemittel</button>
+    <button data-t="quiz">5 Quiz</button>
+  </nav>
+</div></header>
+
+<main>
+<!-- ============ TAB 1 KREISLAUF ============ -->
+<section id="kreis" class="on">
+  <div class="grid">
+    <div class="card">
+      <h2>Der Kältemittelkreislauf</h2>
+      <div class="mut">Tippen Sie auf ein Bauteil, um mehr zu erfahren. Verändern Sie rechts die Bedingungen und beobachten Sie Drücke und Ausblastemperatur.</div>
+      <div id="svgK"></div>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--hd)"></i>Hochdruck gasförmig (heiß)</span>
+        <span><i class="dot" style="background:var(--hdl)"></i>Hochdruck flüssig (warm)</span>
+        <span><i class="dot" style="background:var(--nd)"></i>Niederdruck Nassdampf (kalt)</span>
+        <span><i class="dot" style="background:var(--ndl)"></i>Niederdruck gasförmig (kühl)</span>
+      </div>
+    </div>
+    <div class="ctrl">
+      <div class="card">
+        <h2>Bedingungen</h2>
+        <div class="ctrl">
+          <div class="row"><span style="width:150px;font-size:14px">Klimaanlage (A/C)</span>
+            <div class="seg" id="kAC"><button data-v="1" class="on">AN</button><button data-v="0">AUS</button></div></div>
+          <label class="sl"><span>Außentemperatur</span><input id="kT" type="range" min="10" max="40" value="25"><span id="kTv">25 °C</span></label>
+          <div class="row"><span style="width:150px;font-size:14px">Motordrehzahl</span>
+            <div class="seg" id="kRpm"><button data-v="0.6">Leerlauf</button><button data-v="1" class="on">1500</button><button data-v="1.3">3000</button></div></div>
+          <div class="row"><span style="width:150px;font-size:14px">Fahrzeug</span>
+            <div class="seg" id="kWind"><button data-v="0">steht (Stau)</button><button data-v="1" class="on">fährt</button></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Messwerte</h2>
+        <div class="gauges"><div id="gLoK"></div><div id="gHiK"></div></div>
+        <div class="vals" style="margin-top:8px">
+          <div class="val"><span>Ausblastemperatur</span><b id="kOut">–</b></div>
+          <div class="val"><span>Leistung Kompressor</span><b id="kP">–</b></div>
+          <div class="val"><span>Mehrverbrauch (Benziner)</span><b id="kV">–</b></div>
+          <div class="val"><span>Kompressor</span><b id="kK">–</b></div>
+        </div>
+        <div class="mut" style="margin-top:6px">Mehrverbrauch wie Arbeitsheft A11: η<sub>Motor</sub> = 0,3 · η<sub>Riemen</sub> = 0,97 · ρ = 0,74 kg/l · H<sub>u</sub> = 42 700 kJ/kg</div>
+      </div>
+      <div class="info" id="kInfo"><h4>Tipp</h4>Stellen Sie das Fahrzeug in den Stau und erhöhen Sie die Außentemperatur. Was passiert mit dem Hochdruck – und warum?</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TAB 2 DIAGNOSE ============ -->
+<section id="diag">
+  <div class="grid">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">Werkstattauftrag <span id="dNr"></span></h2>
+        <div class="row"><span class="pill" id="dTime">Arbeitszeit 0 min</span><span class="pill" id="dScore">gelöst: 0</span></div>
+      </div>
+      <div class="msg warn" id="dAuftrag" style="margin-top:8px"></div>
+      <div id="svgD"></div>
+      <div class="gauges"><div id="gLoD"></div><div id="gHiD"></div></div>
+      <div class="mut" id="dSoll" style="margin-top:6px"></div>
+    </div>
+    <div class="ctrl">
+      <div class="card">
+        <h2>1 · Messen</h2>
+        <div class="mut">Schließen Sie die Kupplungen des Servicegeräts an: Welche Kupplung kommt auf den Anschluss <b>„L“</b> (Saugleitung, großer Querschnitt)?</div>
+        <div class="row" style="margin-top:8px" id="dCouple">
+          <button class="btn" style="background:var(--nd)" data-c="blue">blaue Kupplung (LP)</button>
+          <button class="btn" style="background:var(--hd)" data-c="red">rote Kupplung (HP)</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn dark" id="dStart" disabled>Motor 1500 1/min · A/C AN · Gebläse max</button>
+        </div>
+        <div id="dMeasMsg"></div>
+      </div>
+      <div class="card">
+        <h2>2 · Prüfen</h2>
+        <div class="tools" id="dTools"></div>
+        <h3>Prüfprotokoll</h3>
+        <div class="log" id="dLog"><div class="mut">Noch keine Prüfungen.</div></div>
+      </div>
+      <div class="card">
+        <h2>3 · Diagnose stellen</h2>
+        <div id="dQ1">
+          <div class="mut">Schritt A: Welche Zeile der Diagnosetabelle trifft zu?</div>
+          <div class="opts" id="dCat" style="margin-top:6px"></div>
+        </div>
+        <div id="dQ2" class="hide">
+          <div class="mut">Schritt B: Was ist die Ursache?</div>
+          <div class="opts" id="dCause" style="margin-top:6px"></div>
+        </div>
+        <div id="dRes"></div>
+        <div class="row" style="margin-top:10px"><button class="btn sec" id="dNew">Neues Fahrzeug</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TAB 3 KLIMASERVICE ============ -->
+<section id="serv">
+  <div class="grid">
+    <div class="card">
+      <h2>Klimaservice am Servicegerät</h2>
+      <div class="msg warn" id="sAuftrag"></div>
+      <div class="row" style="gap:16px;align-items:stretch;margin-top:10px">
+        <div style="flex:1 1 260px">
+          <div class="screen" id="sScreen">KLIMASERVICEGERÄT
+<span class="big">BEREIT</span>Wählen Sie den ersten Arbeitsschritt.</div>
+          <div id="sTask"></div>
+          <div id="sMsg"></div>
+        </div>
+        <div style="flex:1 1 220px">
+          <div id="svgS"></div>
+        </div>
+      </div>
+    </div>
+    <div class="ctrl">
+      <div class="card">
+        <h2>Arbeitsschritte</h2>
+        <div class="mut">Klicken Sie die Schritte in der richtigen Reihenfolge an.</div>
+        <div class="steps" id="sSteps" style="margin-top:8px"></div>
+        <div class="row" style="margin-top:10px"><span class="pill" id="sErr">Fehler: 0</span><button class="btn sec" id="sNew">Neues Fahrzeug</button></div>
+      </div>
+      <div class="info"><h4>Faustregeln</h4>
+        Kältemittelverlust: bis ca. 10 % pro Jahr sind normal.<br>
+        Evakuieren: 60 min je kg Füllmenge, Vakuum mindestens 20 min halten.<br>
+        Eine undichte Anlage wird <b>nie</b> einfach nachgefüllt.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TAB 4 KÄLTEMITTEL ============ -->
+<section id="km">
+  <div class="rf">
+    <div class="card"><h2>R134a</h2><div class="mut">Tetrafluorethan · ältere Fahrzeuge</div>
+      <p>GWP <b>1430</b> · nicht brennbar (A1)<br>Hochdruck ca. 15–20 bar<br>Seit 2017 in neuen Pkw in der EU nicht mehr zulässig (GWP &gt; 150).</p></div>
+    <div class="card" style="border-top-color:var(--warn)"><h2>R1234yf</h2><div class="mut">Tetrafluorpropen · heutiger Standard</div>
+      <p>GWP <b>&lt; 1</b> · schwer entflammbar (A2L)<br>Drücke ähnlich R134a<br>Bei Brand: Fluorwasserstoff (HF). Baut sich in der Luft zu TFA ab.</p></div>
+    <div class="card" style="border-top-color:var(--nd)"><h2>R744 (CO₂)</h2><div class="mut">natürliches Kältemittel · u. a. E-Autos mit Wärmepumpe</div>
+      <p>GWP <b>1</b> · nicht brennbar (A1)<br>Hochdruck bis ca. 130 bar!<br>Schwerer als Luft, geruchlos: Erstickungsgefahr in Gruben.</p></div>
+  </div>
+  <div class="grid" style="margin-top:16px">
+    <div class="card">
+      <h2>Rechner: Was bedeutet ein Leck fürs Klima?</h2>
+      <div class="ctrl">
+        <div class="row"><span style="width:150px;font-size:14px">Kältemittel</span>
+          <div class="seg" id="gRf"><button data-v="1430" class="on">R134a</button><button data-v="0.5">R1234yf</button><button data-v="1">R744</button></div></div>
+        <label class="sl"><span>entwichene Menge</span><input id="gM" type="range" min="50" max="1000" step="10" value="600"><span id="gMv">600 g</span></label>
+      </div>
+      <div class="vals" style="margin-top:10px">
+        <div class="val"><span>CO₂-Äquivalent</span><b id="gEq">–</b></div>
+        <div class="val"><span>entspricht Autofahrt (140 g CO₂/km)</span><b id="gKm">–</b></div>
+      </div>
+      <h3>Druck auf der Hochdruckseite im Vergleich</h3>
+      <div class="bars">
+        <div class="bar"><span>R134a</span><div class="tr"><div class="fi" style="width:15%;background:var(--hd)"></div></div><span>~20 bar</span></div>
+        <div class="bar"><span>R1234yf</span><div class="tr"><div class="fi" style="width:15%;background:var(--warn)"></div></div><span>~20 bar</span></div>
+        <div class="bar"><span>R744</span><div class="tr"><div class="fi" style="width:100%;background:var(--nd)"></div></div><span>~130 bar</span></div>
+      </div>
+      <div class="mut" style="margin-top:6px">GWP-Werte nach F-Gase-Verordnung (EU) 2024/573. R1234yf: GWP &lt; 1 (Rechner nutzt 0,5).</div>
+    </div>
+    <div class="news">
+      <h3>📰 Aktuell (Stand November 2026)</h3>
+      <ul>
+        <li><b>Juni 2026:</b> Der Risikobewertungsausschuss der EU-Chemikalienagentur ECHA stuft <b>TFA</b> (Trifluoressigsäure) als fortpflanzungsgefährdend (Kat. 1B) ein.</li>
+        <li><b>Juli 2026:</b> Studie der Universität Bristol: R1234yf aus Autoklimaanlagen ist in Europa vermutlich bereits eine der größten Quellen für TFA – einer „Ewigkeitschemikalie“ (PFAS).</li>
+        <li><b>November 2026:</b> Die Deutsche Umwelthilfe fordert, F-Gase wie R1234yf in die geplante EU-PFAS-Beschränkung aufzunehmen; Alternativen: CO₂ (R744) oder Propan.</li>
+        <li>Die EU entscheidet noch: Bisher ist R1234yf <b>erlaubt</b>. Für Werkstätten wichtig: Je nach Kältemittel braucht man ein eigenes Servicegerät – und Sachkunde (Durchführungsverordnung (EU) 2025/1893).</li>
+      </ul>
+      <div class="mut">Diskussionsfrage: Klimaschutz (niedriger GWP) gegen Umwelt- und Gesundheitsschutz (TFA) – welches Kältemittel ist „das richtige“?</div>
+      <p style="font-size:14px;margin-bottom:0">Quellen: <a href="https://www.bristol.ac.uk/news/2026/july/replacement-climate-friendly-car-.html" target="_blank" rel="noopener">Universität Bristol</a> ·
+      <a href="https://www.duh.de/presse/pressemitteilungen/pressemitteilung/studie-der-deutschen-umwelthilfe-entlarvt-falschaussagen-der-chemieindustrie-zur-beschraenkung-von-pf/" target="_blank" rel="noopener">DUH</a> ·
+      <a href="https://www.umweltbundesamt.de/en/press/pressinformation/trifluoroacetic-acid-from-fluorinated-refrigerants" target="_blank" rel="noopener">Umweltbundesamt</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TAB 5 QUIZ ============ -->
+<section id="quiz">
+  <div class="card" style="max-width:760px;margin:0 auto">
+    <div class="row" style="justify-content:space-between"><h2 style="margin:0">Quiz Klimaanlage</h2><span class="pill" id="qCnt"></span></div>
+    <div class="qprog"><div id="qBar"></div></div>
+    <div id="qBox"></div>
+  </div>
+</section>
+</main>
+<footer>Vereinfachtes Lernmodell (R134a, Expansionsventil, Drücke als Überdruck). Sollwerte orientieren sich am Arbeitsheft: bei 20 °C Niederdruck 0,6–1,2 bar, Hochdruck 7–14 bar. Im Fahrzeug immer die Prüfanleitung des Herstellers verwenden.</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const fmt=(x,d=1)=>x.toFixed(d).replace('.',',');
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const NS='http://www.w3.org/2000/svg';
+
+/* ---------- Tabs ---------- */
+$$('#nav button').forEach(b=>b.onclick=()=>{
+  $$('#nav button').forEach(x=>x.classList.toggle('on',x===b));
+  $$('main section').forEach(s=>s.classList.toggle('on',s.id===b.dataset.t));
+});
+function seg(id,cb){const el=$(id);el.querySelectorAll('button').forEach(b=>b.onclick=()=>{el.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));cb(b.dataset.v)});}
+
+/* ---------- Physik-Modell (vereinfacht, R134a) ---------- */
+// Sättigungsdruck R134a (absolut, bar) -> Überdruck
+const SAT=[[0,2.93],[10,4.15],[20,5.72],[30,7.70],[40,10.17],[50,13.18]];
+function ruhedruck(T){for(let i=0;i<SAT.length-1;i++){const[a,pa]=SAT[i],[b,pb]=SAT[i+1];if(T<=b)return pa+(pb-pa)*(T-a)/(b-a)-1;}return 12;}
+const ndSoll=T=>0.9+(T-20)*0.02;
+const hdSoll=T=>3.5+0.35*T;
+function normal(T,rpm,wind){
+  const nd=ndSoll(T)-(rpm-1)*0.25;
+  const hd=hdSoll(T)+(wind?0:2.5)+(rpm-1)*2;
+  let out=4+(T-20)*0.18+(wind?0:2.5)+(rpm<1?3:0)-(rpm>1?0.5:0);
+  const pk=705*(1+(T-20)*0.0475)*(wind?1:1.15)*(rpm<1?0.85:rpm>1?1.12:1);
+  return{nd,hd,out,pk};
+}
+const fuel=pk=>pk/(0.3*0.97)*3600/(0.74*42700*1000);
+
+/* ---------- Kreislauf-SVG ---------- */
+const PTS=[[140,382],[140,115],[380,115],[485,115],[720,115],[720,205],[720,420],[470,420],[178,420],[140,420],[140,382]];
+// Zonen: Index des Segments -> Zustand
+function zoneOf(seg,f){ // f = Anteil im Segment
+  if(seg===0)return['hd',0];
+  if(seg===1)return['cond',f];
+  if(seg<=4)return['hdl',0];
+  if(seg===5)return['nd',0];
+  if(seg===6)return['evap',f];
+  return['ndg',0];
+}
+function mix(c1,c2,f){const a=parseInt(c1.slice(1),16),b=parseInt(c2.slice(1),16);const r=Math.round(((a>>16)&255)*(1-f)+((b>>16)&255)*f),g=Math.round(((a>>8)&255)*(1-f)+((b>>8)&255)*f),bl=Math.round((a&255)*(1-f)+(b&255)*f);return'#'+((1<<24)+(r<<16)+(g<<8)+bl).toString(16).slice(1);}
+const COL={hd:'#e63946',hdl:'#f4a261',nd:'#2f80ed',ndg:'#8ecae6'};
+function colorAt(z){const[k,f]=z;if(k==='cond')return mix(COL.hd,COL.hdl,f);if(k==='evap')return mix(COL.nd,COL.ndg,f);return COL[k];}
+const PARTS={
+  komp:{n:'Kompressor (Verdichter)',t:'Saugt gasförmiges Kältemittel von der Niederdruckseite an und verdichtet es: Druck und Temperatur steigen (bis ca. 70 °C und mehr). Antrieb über Keilrippenriemen und Magnetkupplung – oder extern geregelt (Taumelscheibe, PWM-Regelventil). E-Autos: elektrischer Hochvolt-Kompressor. Grenze Niederdruck → Hochdruck.'},
+  kond:{n:'Kondensator (Verflüssiger)',t:'Sitzt vor dem Kühler. Das heiße Gas gibt Wärme an Fahrtwind und Zusatzlüfter ab und kondensiert dabei – es wird flüssig. Deshalb fühlt sich der Kondensator heiß an (ca. 60–100 °C). Im Stau fehlt der Fahrtwind – der Hochdruck steigt.'},
+  trock:{n:'Flüssigkeitsbehälter mit Trockner',t:'Vorratsbehälter und Ausgleich für unterschiedliche Fördermengen. Das Trockenmittel bindet Feuchtigkeit, ein Filter hält Schmutz zurück. Ist der Trockner gesättigt, kann Wasser am Expansionsventil einfrieren und mit dem Kältemittel Säure bilden.'},
+  ev:{n:'Expansionsventil',t:'Engstelle zwischen Hoch- und Niederdruckseite: Der Druck fällt stark, das Kältemittel kühlt dabei stark ab. Ein Temperaturfühler am Verdampferausgang regelt die eingespritzte Menge – so verdampft alles Kältemittel und kein flüssiges Kältemittel erreicht den Kompressor. Alternative: Drossel mit festem Querschnitt (dann Akkumulator auf der ND-Seite).'},
+  verd:{n:'Verdampfer',t:'Sitzt im Klimagerät hinter dem Armaturenbrett. Das Kältemittel verdampft und nimmt dabei Wärme aus der vorbeiströmenden Luft auf. Die Luft wird kalt – und trocken: Wasser kondensiert am Verdampfer und tropft unter das Auto. Feuchter Verdampfer + Schmutz = muffiger Geruch → Desinfektion.'},
+  lo:{n:'Serviceanschluss Niederdruck (L)',t:'Auf der Saugleitung (großer Leitungsquerschnitt). Hier wird die blaue Kupplung (LP) des Servicegeräts angeschlossen. Hoch- und Niederdruckanschluss haben unterschiedliche Durchmesser – Verwechslungsschutz.'},
+  hi:{n:'Serviceanschluss Hochdruck (H)',t:'Auf der Hochdruckleitung (kleiner Leitungsquerschnitt). Hier wird die rote Kupplung (HP) angeschlossen.'},
+  ds:{n:'Druckschalter',t:'Schützt die Anlage: Bei zu niedrigem Druck (Kältemittelmangel → auch Ölmangel) und bei zu hohem Druck (Bersten) wird der Kompressor abgeschaltet. Moderne Anlagen nutzen einen Drucksensor, der dem Steuergerät den Hochdruck meldet.'}
+};
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function buildCircuit(container,onPart){
+  const svg=el('svg',{viewBox:'0 0 860 500','aria-label':'Kältemittelkreislauf'});
+  container.appendChild(svg);
+  el('rect',{x:0,y:0,width:860,height:500,fill:'#f8fafb',rx:12},svg);
+  // Bereiche
+  el('rect',{x:20,y:30,width:370,height:120,fill:'#fde4e6',opacity:.45,rx:10},svg);
+  el('text',{x:30,y:50,'font-size':14,fill:'#c62828','font-weight':700},svg).textContent='HOCHDRUCKSEITE';
+  el('text',{x:205,y:488,'font-size':14,fill:'#1d5fbf','font-weight':700},svg).textContent='NIEDERDRUCKSEITE';
+  // Leitungen
+  const d=PTS.map((p,i)=>(i?'L':'M')+p[0]+' '+p[1]).join(' ');
+  el('path',{d,fill:'none',stroke:'#cfd8dc','stroke-width':16,'stroke-linejoin':'round'},svg);
+  const pipeHD=el('path',{d:'M140 382 L140 115 L380 115 L485 115 L720 115 L720 205',fill:'none',stroke:'#f6c2c6','stroke-width':10,'stroke-linejoin':'round'},svg);
+  const pipeND=el('path',{d:'M720 205 L720 420 L470 420 L178 420',fill:'none',stroke:'#c5dcf7','stroke-width':14,'stroke-linejoin':'round'},svg);
+  const gP=el('g',{},svg); // Partikel
+  // Kondensator
+  const gK=el('g',{class:'clickable'},svg);
+  el('rect',{class:'hl',x:160,y:80,width:220,height:70,rx:6,fill:'#eceff1',stroke:'#607d8b','stroke-width':2},gK);
+  for(let x=172;x<376;x+=10)el('line',{x1:x,y1:84,x2:x,y2:146,stroke:'#b0bec5','stroke-width':1.5},gK);
+  el('text',{x:270,y:72,'text-anchor':'middle','font-size':15,'font-weight':700,fill:'#263238'},gK).textContent='Kondensator';
+  const leaves=el('g',{opacity:0},gK);
+  for(let i=0;i<9;i++)el('ellipse',{cx:175+i*23,cy:95+(i%3)*20,rx:9,ry:5,fill:'#8d6e3c',transform:`rotate(${i*37} ${175+i*23} ${95+(i%3)*20})`},leaves);
+  // Fahrtwind / Lüfter
+  const gW=el('g',{},svg);
+  for(let i=0;i<3;i++){el('path',{d:`M${185+i*65} 205 q8 -18 0 -36`,fill:'none',stroke:'#e63946','stroke-width':2.5,'marker-end':'url(#ar)'},gW);}
+  el('text',{x:270,y:225,'text-anchor':'middle','font-size':13,fill:'#c62828'},gW).textContent='Wärme an die Außenluft';
+  const fan=el('g',{transform:'translate(60 115)'},svg);
+  el('circle',{r:26,fill:'#fff',stroke:'#607d8b','stroke-width':2},fan);
+  const blades=el('g',{},fan);
+  for(let i=0;i<4;i++)el('ellipse',{cx:0,cy:-12,rx:6,ry:12,fill:'#90a4ae',transform:`rotate(${i*90})`},blades);
+  el('text',{x:0,y:44,'text-anchor':'middle','font-size':12,fill:'#455a64'},fan).textContent='Lüfter';
+  // Trockner
+  const gT=el('g',{class:'clickable'},svg);
+  el('rect',{class:'hl',x:470,y:80,width:32,height:70,rx:12,fill:'#eceff1',stroke:'#607d8b','stroke-width':2},gT);
+  el('text',{x:486,y:72,'text-anchor':'middle','font-size':13,'font-weight':700,fill:'#263238'},gT).textContent='Trockner';
+  const frostT=el('g',{opacity:0},svg);
+  el('rect',{x:505,y:106,width:60,height:18,rx:6,fill:'#e3f2fd',stroke:'#90caf9'},frostT);
+  el('text',{x:535,y:119,'text-anchor':'middle','font-size':10,fill:'#1565c0'},frostT).textContent='Reif!';
+  // Expansionsventil
+  const gE=el('g',{class:'clickable'},svg);
+  el('polygon',{class:'hl',points:'720,180 745,205 720,230 695,205',fill:'#fff',stroke:'#263238','stroke-width':2.5},gE);
+  el('line',{x1:745,y1:205,x2:790,y2:300,stroke:'#607d8b','stroke-width':1.5,'stroke-dasharray':'4 3'},gE);
+  el('circle',{cx:790,cy:300,r:5,fill:'#607d8b'},gE);
+  el('text',{x:752,y:196,'font-size':13,'font-weight':700,fill:'#263238'},gE).textContent='Expansions-';el('text',{x:752,y:212,'font-size':13,'font-weight':700,fill:'#263238'},gE).textContent='ventil';
+  // Verdampfer
+  const gV=el('g',{class:'clickable'},svg);
+  el('rect',{class:'hl',x:470,y:390,width:250,height:60,rx:6,fill:'#e1f0fb',stroke:'#1d5fbf','stroke-width':2},gV);
+  for(let x=482;x<716;x+=10)el('line',{x1:x,y1:394,x2:x,y2:446,stroke:'#9ec5ea','stroke-width':1.5},gV);
+  el('text',{x:595,y:470,'text-anchor':'middle','font-size':15,'font-weight':700,fill:'#263238'},gV).textContent='Verdampfer';
+  const ice=el('rect',{x:470,y:390,width:250,height:60,rx:6,fill:'#ffffff',opacity:0},svg);
+  // Luft in den Innenraum
+  const gA=el('g',{},svg);
+  el('text',{x:595,y:300,'text-anchor':'middle','font-size':13,fill:'#1d5fbf'},gA).textContent='kalte, trockene Luft → Innenraum';
+  for(let i=0;i<3;i++)el('path',{d:`M${545+i*50} 380 q8 -24 0 -48`,fill:'none',stroke:'#2f80ed','stroke-width':2.5,'marker-end':'url(#arb)'},gA);
+  const tOut=el('text',{x:595,y:322,'text-anchor':'middle','font-size':18,'font-weight':700,fill:'#1d5fbf'},gA);
+  // Kompressor
+  const gC=el('g',{class:'clickable'},svg);
+  el('circle',{class:'hl',cx:140,cy:420,r:40,fill:'#fff',stroke:'#263238','stroke-width':3},gC);
+  const rotor=el('g',{transform:'translate(140 420)'},gC);
+  el('circle',{r:26,fill:'none',stroke:'#78909c','stroke-width':3,'stroke-dasharray':'10 6'},rotor);
+  el('line',{x1:-18,y1:0,x2:18,y2:0,stroke:'#455a64','stroke-width':4},rotor);
+  el('text',{x:140,y:480,'text-anchor':'middle','font-size':15,'font-weight':700,fill:'#263238'},gC).textContent='Kompressor';
+  // Serviceanschlüsse
+  const gLo=el('g',{class:'clickable'},svg);
+  el('rect',{class:'hl',x:300,y:396,width:26,height:24,rx:4,fill:'#2f80ed'},gLo);
+  el('text',{x:313,y:413,'text-anchor':'middle','font-size':14,'font-weight':800,fill:'#fff'},gLo).textContent='L';
+  const gHi=el('g',{class:'clickable'},svg);
+  el('rect',{class:'hl',x:600,y:91,width:26,height:24,rx:4,fill:'#e63946'},gHi);
+  el('text',{x:613,y:108,'text-anchor':'middle','font-size':14,'font-weight':800,fill:'#fff'},gHi).textContent='H';
+  const gDs=el('g',{class:'clickable'},svg);
+  el('rect',{class:'hl',x:650,y:122,width:40,height:20,rx:4,fill:'#fff',stroke:'#263238','stroke-width':1.5},gDs);
+  el('text',{x:670,y:136,'text-anchor':'middle','font-size':10,fill:'#263238'},gDs).textContent='p-Schalter';
+  // Pfeile
+  const defs=el('defs',{},svg);
+  const mk=(id,c)=>{const m=el('marker',{id,viewBox:'0 0 10 10',refX:5,refY:5,markerWidth:5,markerHeight:5,orient:'auto-start-reverse'},defs);el('path',{d:'M0 0 L10 5 L0 10 z',fill:c},m);};
+  mk('ar','#e63946');mk('arb','#2f80ed');
+  // Zustandslabels
+  const lab=(x,y,t,c)=>{const g=el('g',{},svg);el('text',{x,y,'font-size':12,fill:c,'font-weight':600},g).textContent=t;return g;};
+  lab(150,260,'gasförmig, heiß','#c62828');lab(530,140,'flüssig','#d4782d');lab(730,320,'flüssig/gasförmig','#1d5fbf');lab(300,445,'gasförmig, kühl','#4a90b8');
+  [[gC,'komp'],[gK,'kond'],[gT,'trock'],[gE,'ev'],[gV,'verd'],[gLo,'lo'],[gHi,'hi'],[gDs,'ds']].forEach(([g,k])=>g.addEventListener('click',()=>onPart&&onPart(k)));
+  // Partikel
+  const segs=[];let L=0;for(let i=0;i<PTS.length-1;i++){const[a,b]=[PTS[i],PTS[i+1]];const l=Math.hypot(b[0]-a[0],b[1]-a[1]);segs.push({a,b,l,s:L});L+=l;}
+  const N=64;const parts=[];for(let i=0;i<N;i++){parts.push({s:i*L/N,c:el('circle',{r:4},gP)});}
+  const st={flow:1,charge:1,rot:0,fanOn:true,fanRot:0,windOn:true};
+  function posAt(s){s=((s%L)+L)%L;for(let i=0;i<segs.length;i++){const g=segs[i];if(s<=g.s+g.l||i===segs.length-1){const f=Math.min(1,(s-g.s)/g.l);return{x:g.a[0]+(g.b[0]-g.a[0])*f,y:g.a[1]+(g.b[1]-g.a[1])*f,z:zoneOf(i,f)};}}}
+  let last=performance.now();
+  function frame(t){const dt=Math.min(0.05,(t-last)/1000);last=t;
+    const v=70*st.flow;
+    const shown=Math.round(N*st.charge);
+    parts.forEach((p,i)=>{p.s+=v*dt;const q=posAt(p.s);p.c.setAttribute('cx',q.x);p.c.setAttribute('cy',q.y);p.c.setAttribute('fill',colorAt(q.z));
+      const liq=q.z[0]==='hdl'||(q.z[0]==='cond'&&q.z[1]>.5)||q.z[0]==='nd';p.c.setAttribute('r',liq?5:3.6);p.c.setAttribute('opacity',i<shown?1:0);});
+    st.rot+=st.flow*300*dt;rotor.setAttribute('transform',`translate(140 420) rotate(${st.rot})`);
+    if(st.fanOn){st.fanRot+=600*dt;}blades.setAttribute('transform',`rotate(${st.fanRot})`);
+    requestAnimationFrame(frame);}
+  requestAnimationFrame(frame);
+  return{st,svg,set(o){Object.assign(st,o);gW.setAttribute('opacity',(st.flow>0?1:.15));leaves.setAttribute('opacity',o.dirty?1:0);frostT.setAttribute('opacity',o.frost?1:0);ice.setAttribute('opacity',o.ice?.7:0);gA.setAttribute('opacity',st.flow>0?1:.25);},
+    out(t){tOut.textContent=t;}};
+}
+
+/* ---------- Manometer ---------- */
+function gauge(container,label,color,min,max,ticks){
+  const svg=el('svg',{viewBox:'0 0 200 200'});container.appendChild(svg);
+  el('circle',{cx:100,cy:90,r:80,fill:'#fff',stroke:color,'stroke-width':6},svg);
+  const a0=-225,a1=45; // Grad
+  const ang=v=>a0+(a1-a0)*(Math.max(min,Math.min(max,v))-min)/(max-min);
+  const pt=(a,r)=>[100+r*Math.cos(a*Math.PI/180),90+r*Math.sin(a*Math.PI/180)];
+  ticks.forEach(v=>{const a=ang(v);const[p,q]=[pt(a,70),pt(a,60)];el('line',{x1:p[0],y1:p[1],x2:q[0],y2:q[1],stroke:'#37474f','stroke-width':2},svg);const r=pt(a,48);el('text',{x:r[0],y:r[1]+4,'text-anchor':'middle','font-size':11,fill:'#37474f'},svg).textContent=String(v).replace('.',',');});
+  const band=el('path',{fill:'none',stroke:'#66bb6a','stroke-width':8,opacity:.8},svg);
+  el('text',{x:100,y:194,'text-anchor':'middle','font-size':14,'font-weight':700,fill:color},svg).textContent=label;
+  const val=el('text',{x:100,y:152,'text-anchor':'middle','font-size':18,'font-weight':800,fill:'#263238'},svg);
+  const nd=el('line',{x1:100,y1:90,x2:100,y2:30,stroke:'#263238','stroke-width':3,'stroke-linecap':'round'},svg);
+  el('circle',{cx:100,cy:90,r:6,fill:'#263238'},svg);
+  let cur=min,target=min;
+  function draw(){cur+=(target-cur)*0.12;const a=ang(cur);const p=pt(a,66);nd.setAttribute('x2',p[0]);nd.setAttribute('y2',p[1]);requestAnimationFrame(draw);}
+  draw();
+  return{set(v,txt){target=v;val.textContent=txt!==undefined?txt:fmt(v)+' bar';},
+    band(lo,hi){if(lo===null){band.setAttribute('d','');return;}const A=ang(lo),B=ang(hi);const[p,q]=[pt(A,76),pt(B,76)];band.setAttribute('d',`M${p[0]} ${p[1]} A76 76 0 ${B-A>180?1:0} 1 ${q[0]} ${q[1]}`);}};
+}
+
+/* ================= TAB 1 ================= */
+const K={ac:1,T:25,rpm:1,wind:1};
+const cK=buildCircuit($('#svgK'),k=>{const p=PARTS[k];$('#kInfo').innerHTML=`<h4>${p.n}</h4>${p.t}`;});
+const gLoK=gauge($('#gLoK'),'Niederdruck','#2f80ed',-1,10,[-1,0,2,4,6,8,10]);
+const gHiK=gauge($('#gHiK'),'Hochdruck','#e63946',0,35,[0,5,10,15,20,25,30,35]);
+function updK(){
+  $('#kTv').textContent=K.T+' °C';
+  let nd,hd,out,pk;
+  if(K.ac){({nd,hd,out,pk}=normal(K.T,K.rpm,K.wind));}
+  else{nd=hd=ruhedruck(K.T);out=K.T;pk=0;}
+  gLoK.set(nd);gHiK.set(hd);
+  gLoK.band(ndSoll(K.T)-0.3,ndSoll(K.T)+0.3);gHiK.band(hdSoll(K.T)-3.5,hdSoll(K.T)+3.5);
+  $('#kOut').textContent=fmt(out)+' °C';
+  $('#kP').textContent=pk?Math.round(pk)+' W':'0 W';
+  $('#kV').textContent=pk?fmt(fuel(pk),2)+' l/h':'0 l/h';
+  $('#kK').textContent=K.ac?'läuft':'aus';
+  cK.set({flow:K.ac?K.rpm:0,charge:1,fanOn:K.ac&&!K.wind||K.ac&&K.T>30});
+  cK.out(K.ac?fmt(out)+' °C':'');
+  if(!K.ac)$('#kInfo').innerHTML='<h4>Klimaanlage aus</h4>Der Kompressor steht. Nach kurzer Zeit gleichen sich die Drücke an: Auf beiden Seiten herrscht der <b>Ruhedruck</b> – er hängt nur von der Temperatur ab (bei 20 °C ca. 4,7 bar). Ist der Ruhedruck deutlich niedriger, fehlt Kältemittel.';
+}
+$('#kT').oninput=e=>{K.T=+e.target.value;updK();};
+seg('#kAC',v=>{K.ac=+v;updK();});seg('#kRpm',v=>{K.rpm=+v;updK();});seg('#kWind',v=>{K.wind=+v;updK();
+  if(!K.wind)$('#kInfo').innerHTML='<h4>Stau!</h4>Kein Fahrtwind am Kondensator – nur der Zusatzlüfter kühlt. Das Kältemittel gibt weniger Wärme ab, <b>der Hochdruck steigt</b>, die Ausblastemperatur auch. Im Leerlauf fördert ein riemengetriebener Kompressor zusätzlich weniger.';});
+updK();
+
+/* ================= TAB 2 DIAGNOSE ================= */
+const CATS=[
+ {id:'c1',t:'Hochdruck normal/zu hoch · Niederdruck zu niedrig'},
+ {id:'c2',t:'Hochdruck normal/zu niedrig · Niederdruck zu hoch'},
+ {id:'c3',t:'Hochdruck normal/zu niedrig · Niederdruck zu niedrig'},
+ {id:'c4',t:'Hochdruck zu hoch · Niederdruck zu hoch'},
+ {id:'c5',t:'Beide Drücke gleich (Ruhedruck) – Kompressor arbeitet nicht'},
+ {id:'c6',t:'Beide Drücke im Sollbereich'}
+];
+const CAUSES={
+ mangel:{n:'Zu wenig Kältemittel (Leck)',cat:'c3'},
+ ueber:{n:'Zu viel Kältemittel (überfüllt)',cat:'c4'},
+ kond:{n:'Kondensator verschmutzt',cat:'c4'},
+ luefter:{n:'Zusatzlüfter ausgefallen',cat:'c4'},
+ verstopft:{n:'Trockner/Expansionsventil verstopft',cat:'c1'},
+ evoffen:{n:'Expansionsventil spritzt zu viel ein (klemmt offen)',cat:'c2'},
+ kompressor:{n:'Kompressor defekt (schlechte Kompression)',cat:'c2'},
+ kupplung:{n:'Magnetkupplung defekt',cat:'c5'},
+ leer:{n:'Anlage fast leer – Druckschalter schaltet Kompressor ab',cat:'c5'},
+ ok:{n:'Anlage in Ordnung – Bedienfehler/Innenraumfilter',cat:'c6'}
+};
+const EXPL={
+ mangel:'Beide Drücke zu niedrig, die Kupplung arbeitet: Es zirkuliert zu wenig Kältemittel. Vorgehen: Leck suchen (UV-Lampe, Formiergas), Leck beseitigen, dann Klimaservice. Nie einfach nachfüllen!',
+ ueber:'Beide Drücke zu hoch bei sauberem Kondensator und laufendem Lüfter: zu viel Kältemittel. Absaugen, wiegen, nach Herstellerangabe neu befüllen.',
+ kond:'Beide Drücke zu hoch – der verschmutzte Kondensator kann die Wärme nicht abgeben. Erst die schnelle, billige Sichtprüfung, bevor man den Kreislauf öffnet!',
+ luefter:'Beide Drücke zu hoch – ohne Zusatzlüfter fehlt (vor allem im Stand) die Kühlung des Kondensators. Lüfter, Sicherung und Ansteuerung prüfen.',
+ verstopft:'Niederdruck sehr niedrig, Hochdruck normal: Engstelle zwischen Hoch- und Niederdruck. Der Reif an der Leitung zeigt die Verstopfung. Trockner/Expansionsventil erneuern, Anlage spülen.',
+ evoffen:'Niederdruck zu hoch, Hochdruck eher niedrig, Saugleitung bereift bis zum Kompressor: Das Expansionsventil spritzt zu viel ein – Gefahr von Flüssigkeitsschlag im Kompressor.',
+ kompressor:'Niederdruck zu hoch, Hochdruck zu niedrig, die Kupplung arbeitet, die Saugleitung bleibt warm: Der Kompressor verdichtet nicht mehr richtig.',
+ kupplung:'Beide Seiten zeigen den Ruhedruck – der Kompressor fördert nicht. Spannung liegt an, aber die Mitnehmerscheibe dreht nicht mit: Magnetkupplung (Spule, Luftspalt) defekt.',
+ leer:'Beide Seiten zeigen einen Druck deutlich UNTER dem Ruhedruck und an der Kupplung liegen 0 V: Der Druckschalter schützt den Kompressor vor Betrieb ohne Öl. Ursache: großes Leck.',
+ ok:'Drücke und Ausblastemperatur sind in Ordnung. Ursache liegt woanders: z. B. zugesetzter Innenraumfilter, falsche Bedienung (Temperatur auf HI, Umluft aus bei Hitze) oder Klappensteuerung.'
+};
+const TOOLS=[
+ {id:'sicht',n:'Sichtprüfung Kondensator & Leitungen',m:2},
+ {id:'luefter',n:'Zusatzlüfter prüfen',m:2},
+ {id:'tasten',n:'Leitungen abtasten (Temperatur, Reif)',m:2},
+ {id:'luft',n:'Ausblastemperatur messen',m:2},
+ {id:'volt',n:'Spannung an Magnetkupplung messen',m:5},
+ {id:'uv',n:'Lecksuche mit UV-Lampe',m:10},
+ {id:'fuell',n:'Kältemittel absaugen & wiegen',m:30}
+];
+let D={},solved=0,caseNr=0;
+const cD=buildCircuit($('#svgD'),k=>{const p=PARTS[k];addLog('ℹ️ '+p.n+': '+p.t.split('.')[0]+'.');});
+const gLoD=gauge($('#gLoD'),'Niederdruck (LP)','#2f80ed',-1,10,[-1,0,2,4,6,8,10]);
+const gHiD=gauge($('#gHiD'),'Hochdruck (HP)','#e63946',0,35,[0,5,10,15,20,25,30,35]);
+const CARS=[['Opel Omega 2.5 V6',640],['VW Golf 6',500],['Ford Focus',570],['BMW 3er (E90)',750],['Audi A4 (B7)',550],['Opel Astra H',640]];
+function newCase(){
+  caseNr++;const fault=pick(Object.keys(CAUSES));const T=pick([15,18,20,22,25,28,30]);const car=pick(CARS);
+  const n=ndSoll(T),h=hdSoll(T),rd=ruhedruck(T);
+  const V={mangel:[0.25,h-5],ueber:[n+0.9,h+8],kond:[n+0.5,h+9],luefter:[n+0.45,h+8.5],verstopft:[0.15,h+1],evoffen:[n+0.7,h-2],kompressor:[n+0.6,h-3.8],kupplung:[rd,rd],leer:[0.9,0.9],ok:[n,h]}[fault];
+  const noise=(fault==='kupplung'||fault==='leer')?0:1;
+  D={fault,T,car,nd:V[0]+noise*rnd(-0.05,0.05),hd:V[1]+noise*rnd(-0.3,0.3),time:0,coupled:false,running:false,used:{},cat:null,done:false,soll:car[1]};
+  $('#dNr').textContent='#'+caseNr;
+  $('#dAuftrag').innerHTML=`<b>${car[0]}</b> (R134a, Expansionsventil) · Außentemperatur <b>${T} °C</b><br>Kunde: „Die Klimaanlage kühlt nicht mehr richtig!“`;
+  $('#dSoll').innerHTML='Sollwerte laut Diagramm bei '+T+' °C: Niederdruck <b>'+fmt(n-0.3)+'–'+fmt(n+0.3)+' bar</b> · Hochdruck <b>'+fmt(h-3.5)+'–'+fmt(h+3.5)+' bar</b> · Ruhedruck (Klima aus) ca. <b>'+fmt(rd)+' bar</b>';
+  gLoD.set(-1,'– – –');gHiD.set(0,'– – –');gLoD.band(null);gHiD.band(null);
+  cD.set({flow:0,charge:1,dirty:false,frost:false,ice:false,fanOn:false});cD.out('');
+  $('#dStart').disabled=true;$('#dMeasMsg').innerHTML='';
+  $$('#dCouple button').forEach(b=>b.disabled=false);
+  $('#dLog').innerHTML='<div class="mut">Noch keine Prüfungen.</div>';
+  $('#dTools').innerHTML='';TOOLS.forEach(t=>{const b=document.createElement('button');b.innerHTML=`${t.n}<small>${t.m} min</small>`;b.onclick=()=>useTool(t,b);$('#dTools').appendChild(b);});
+  $('#dCat').innerHTML='';CATS.forEach(c=>{const b=document.createElement('button');b.textContent=c.t;b.onclick=()=>chooseCat(c,b);$('#dCat').appendChild(b);});
+  $('#dQ2').classList.add('hide');$('#dRes').innerHTML='';
+  addTime(0);
+}
+function addTime(m){D.time+=m;$('#dTime').textContent='Arbeitszeit '+D.time+' min';}
+function addLog(t){const L=$('#dLog');if(L.querySelector('.mut'))L.innerHTML='';const d=document.createElement('div');d.innerHTML=t;L.prepend(d);}
+$$('#dCouple button').forEach(b=>b.onclick=()=>{
+  if(D.coupled)return;
+  if(b.dataset.c==='red'){$('#dMeasMsg').innerHTML='<div class="msg bad">Passt nicht! Die rote HP-Kupplung hat einen anderen Durchmesser als der L-Anschluss – Verwechslungsschutz. Blau gehört auf die Niederdruckseite.</div>';return;}
+  D.coupled=true;addTime(5);$$('#dCouple button').forEach(x=>x.disabled=true);$('#dStart').disabled=false;
+  const st=(D.fault==='kupplung'||D.fault==='leer')?D.nd:ruhedruck(D.T);
+  gLoD.set(st);gHiD.set(st);
+  $('#dMeasMsg').innerHTML=`<div class="msg ok">Kupplungen sitzen: blau auf L, rot auf H. Motor aus: beide Manometer zeigen ${fmt(st)} bar (Ruhedruck). Jetzt Motor starten.</div>`;
+  addLog('🔌 Servicegerät angeschlossen. Ruhedruck: '+fmt(st)+' bar (Soll ca. '+fmt(ruhedruck(D.T))+' bar).');
+});
+$('#dStart').onclick=()=>{
+  if(D.running)return;D.running=true;$('#dStart').disabled=true;addTime(3);
+  gLoD.set(D.nd);gHiD.set(D.hd);
+  gLoD.band(ndSoll(D.T)-0.3,ndSoll(D.T)+0.3);gHiD.band(hdSoll(D.T)-3.5,hdSoll(D.T)+3.5);
+  const f=D.fault;
+  const flow={kupplung:0,leer:0,mangel:0.6,kompressor:0.5,verstopft:0.35}[f]??1;
+  const charge={mangel:0.4,leer:0.12,ueber:1}[f]??1;
+  cD.set({flow,charge,dirty:false,frost:false,ice:false,fanOn:f!=='luefter'});
+  addLog(`▶️ Motor läuft, A/C an. Gemessen: <b>ND ${fmt(D.nd)} bar · HD ${fmt(D.hd)} bar</b>`);
+  $('#dMeasMsg').innerHTML='<div class="msg ok">Vergleichen Sie die Werte mit dem grünen Sollbereich. Dann prüfen oder gleich Schritt A wählen.</div>';
+};
+function outTemp(){const f=D.fault;const base=4+(D.T-20)*0.18;return({mangel:base+9,ueber:base+6,kond:base+8,luefter:base+7,verstopft:base+11,evoffen:base+4,kompressor:base+10,kupplung:D.T-1,leer:D.T-1,ok:base})[f];}
+function useTool(t,b){
+  if(D.done)return;
+  if(!D.coupled&&t.id!=='sicht'&&t.id!=='luefter'){addLog('⚠️ Erst das Servicegerät anschließen.');return;}
+  if(!D.running&&['tasten','luft','volt','luefter'].includes(t.id)){addLog('⚠️ Dafür muss der Motor laufen und A/C an sein.');return;}
+  if(D.used[t.id]){return;}
+  D.used[t.id]=1;b.classList.add('used');addTime(t.m);
+  const f=D.fault;let r='';
+  switch(t.id){
+   case'sicht':r=f==='kond'?'Kondensator stark mit Laub und Insekten zugesetzt!':f==='mangel'?'Ölfeuchte, verschmutzte Stelle am Anschluss des Kondensators.':f==='leer'?'Ölfeuchte Stellen an der Verdampfer-Ablaufseite.':'Kondensator sauber, Leitungen und Anschlüsse ohne Befund.';if(f==='kond')cD.set({dirty:true});break;
+   case'luefter':r=f==='luefter'?'Zusatzlüfter steht – Sicherung, Relais und Motor prüfen!':'Zusatzlüfter läuft bei A/C an.';break;
+   case'tasten':r={verstopft:'Leitung nach dem Trockner kalt und bereift – davor warm.',evoffen:'Saugleitung bis zum Kompressor stark bereift.',kompressor:'Saugleitung kaum kühl, Druckleitung nur lauwarm.',mangel:'Saugleitung nur kühl, kein Beschlag.',kupplung:'Alle Leitungen auf Umgebungstemperatur.',leer:'Alle Leitungen auf Umgebungstemperatur.',ueber:'Druckleitung sehr heiß, Saugleitung kalt.',kond:'Druckleitung sehr heiß, Saugleitung kalt.',luefter:'Druckleitung sehr heiß, Saugleitung kalt.',ok:'Saugleitung kalt und beschlagen, Druckleitung heiß – normal.'}[f];if(f==='verstopft')cD.set({frost:true});break;
+   case'luft':{const o=outTemp();r=`Ausblastemperatur Mitteldüse: ${fmt(o)} °C (Soll bei ${D.T} °C: ca. ${fmt(4+(D.T-20)*0.18)}–${fmt(8+(D.T-20)*0.18)} °C).`;cD.out(fmt(o)+' °C');break;}
+   case'volt':r=f==='kupplung'?'12,4 V an der Magnetkupplung – aber die Mitnehmerscheibe dreht nicht mit!':f==='leer'?'0 V an der Magnetkupplung – der Druckschalter hat abgeschaltet.':'12,4 V an der Magnetkupplung – Kupplung zieht an, Mitnehmerscheibe dreht mit.';break;
+   case'uv':r=f==='mangel'?'UV-Lampe: Kontrastmittel leuchtet am Anschluss des Kondensators – Leck gefunden!':f==='leer'?'UV-Lampe: Kontrastmittel leuchtet stark am Verdampfer-Ablauf – großes Leck!':'Keine Leckstelle erkennbar.';break;
+   case'fuell':{const m=f==='ueber'?D.soll+170:f==='mangel'?Math.round(D.soll*0.45):f==='leer'?Math.round(D.soll*0.1):D.soll+Math.round(rnd(-15,10));r=`Abgesaugt: <b>${m} g</b> (Soll laut Aufkleber ${D.soll} g). Teuer und aufwendig – vorher besser einfache Prüfungen!`;break;}
+  }
+  addLog('🔧 <b>'+t.n+':</b> '+r);
+}
+function chooseCat(c,b){
+  if(D.done||D.cat)return;
+  if(!D.running&&!D.coupled){addLog('⚠️ Ohne Messung keine Diagnose – erst Servicegerät anschließen.');return;}
+  if(!D.running){addLog('⚠️ Erst den Motor starten und die Betriebsdrücke ablesen.');return;}
+  const right=CAUSES[D.fault].cat;
+  if(c.id===right){b.classList.add('right');D.cat=c.id;
+    $('#dQ2').classList.remove('hide');$('#dCause').innerHTML='';
+    Object.entries(CAUSES).filter(([k,v])=>v.cat===right||Math.random()<.35).forEach(([k,v])=>{const x=document.createElement('button');x.textContent=v.n;x.onclick=()=>chooseCause(k,x);$('#dCause').appendChild(x);});
+  }else{b.classList.add('wrong');addTime(3);addLog('❌ Diese Zeile passt nicht zu den Messwerten – Sollbereich noch einmal vergleichen (+3 min).');}
+}
+function chooseCause(k,b){
+  if(D.done)return;
+  if(k===D.fault){b.classList.add('right');D.done=true;solved++;$('#dScore').textContent='gelöst: '+solved;
+    const fast=D.time<=25;
+    $('#dRes').innerHTML=`<div class="msg ok"><b>Richtig: ${CAUSES[k].n}.</b><br>${EXPL[k]}<br><br>Arbeitszeit: <b>${D.time} min</b> ${fast?'– effizient gearbeitet! 👍':'– das geht schneller: erst die einfachen Prüfungen, teure zuletzt.'}</div>`;
+  }else{b.classList.add('wrong');addTime(5);
+    const same=CAUSES[k].cat===CAUSES[D.fault].cat;
+    $('#dRes').innerHTML=`<div class="msg bad">Nicht ganz. ${same?'Die Messwerte passen zwar dazu – aber Ihre Prüfungen sprechen dagegen. Welche Prüfung unterscheidet die Ursachen?':'Diese Ursache passt nicht zur gewählten Tabellenzeile.'} (+5 min)</div>`;}
+}
+$('#dNew').onclick=newCase;newCase();
+
+/* ================= TAB 3 KLIMASERVICE ================= */
+const SCARS=[['Škoda Octavia (2019)','R1234yf',475],['VW Golf 8 (2021)','R1234yf',525],['Opel Corsa F (2020)','R1234yf',420],['BMW 1er F20 (2016)','R1234yf',550],['Ford Fiesta (2012)','R134a',430],['Opel Astra H (2008)','R134a',640]];
+const STEPS=[
+ {id:1,t:'Funktionstest vor der Wartung: Ausblastemperatur messen'},
+ {id:2,t:'Sichtprüfung von Kondensator, Leitungen und Anschlüssen'},
+ {id:3,t:'Servicegerät an HP- und LP-Anschluss anschließen, Drücke ablesen'},
+ {id:4,t:'Kältemittel und Öl absaugen und wiegen'},
+ {id:5,t:'Evakuieren und Vakuum halten (Dichtheitsprüfung)'},
+ {id:6,t:'Öl ergänzen und Kältemittel nach Herstellerangabe einfüllen'},
+ {id:7,t:'Funktionstest nach der Wartung, Drücke kontrollieren'},
+ {id:8,t:'Servicegerät abkoppeln, Ausdruck an das Serviceprotokoll heften'}
+];
+const HINT={1:'Zuerst wird geprüft, wie gut die Anlage jetzt kühlt – sonst kann man nach dem Service nichts vergleichen.',2:'Vor dem Anschließen: Gibt es sichtbare Schäden?',3:'Vor dem Absaugen müssen die Kupplungen sitzen.',4:'Was in der Anlage ist, muss erst heraus – und gewogen werden.',5:'Bevor neu befüllt wird, müssen Luft und Feuchtigkeit raus – und die Dichtheit geprüft werden.',6:'Befüllen erst nach erfolgreicher Vakuumprobe.',7:'Nach dem Befüllen: Funktioniert alles?',8:'Zum Schluss: abkoppeln und dokumentieren.'};
+let S={};
+const svgS=$('#svgS');
+function drawStation(){
+  svgS.innerHTML='';const svg=el('svg',{viewBox:'0 0 240 305'});svgS.appendChild(svg);
+  el('rect',{x:40,y:20,width:160,height:230,rx:14,fill:'#26384b'},svg);
+  el('rect',{x:58,y:38,width:124,height:60,rx:6,fill:'#0f1b26'},svg);
+  S.svgTxt=el('text',{x:120,y:74,'text-anchor':'middle','font-size':14,'font-weight':700,fill:'#7ff5c8','font-family':'monospace'},svg);
+  el('circle',{cx:85,cy:135,r:22,fill:'#fff',stroke:'#2f80ed','stroke-width':5},svg);
+  el('circle',{cx:155,cy:135,r:22,fill:'#fff',stroke:'#e63946','stroke-width':5},svg);
+  el('text',{x:85,y:140,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'#2f80ed'},svg).textContent='LP';
+  el('text',{x:155,y:140,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'#e63946'},svg).textContent='HP';
+  S.bottle=el('rect',{x:95,y:175,width:50,height:60,rx:10,fill:'#90a4ae'},svg);
+  S.fill=el('rect',{x:95,y:235,width:50,height:0,rx:6,fill:'#2a9d8f'},svg);
+  el('text',{x:120,y:296,'text-anchor':'middle','font-size':12,fill:'#5f6b7a'},svg).textContent='Servicegerät mit Kältemittelflasche';
+  el('rect',{x:55,y:250,width:20,height:30,fill:'#263238'},svg);el('rect',{x:165,y:250,width:20,height:30,fill:'#263238'},svg);
+  S.hoseL=el('path',{d:'M85 157 C 85 230, 10 240, 10 290',fill:'none',stroke:'#2f80ed','stroke-width':5,opacity:.15},svg);
+  S.hoseH=el('path',{d:'M155 157 C 155 230, 230 240, 230 290',fill:'none',stroke:'#e63946','stroke-width':5,opacity:.15},svg);
+}
+function screen(head,big,txt){$('#sScreen').innerHTML=`${head}\n<span class="big">${big}</span>${txt||''}`;if(S.svgTxt)S.svgTxt.textContent=big.length>12?big.slice(0,12):big;}
+function newService(){
+  const c=pick(SCARS);const years=pick([2,3,4,5]);const leak=Math.random()<0.25;
+  const rate=leak?rnd(0.14,0.18):rnd(0.04,0.085);
+  const ist=Math.round(c[2]*(1-rate*years));
+  S={car:c,years,leak,ist,next:1,err:0,wait:false,leakHandled:false,finished:false};
+  $('#sAuftrag').innerHTML=`<b>${c[0]}</b> · Aufkleber im Motorraum: „<b>${c[1]} – ${c[2]} g ± 10 g</b>“ · letzter Klimaservice vor <b>${years} Jahren</b>.`;
+  $('#sErr').textContent='Fehler: 0';$('#sTask').innerHTML='';$('#sMsg').innerHTML='';
+  drawStation();screen('KLIMASERVICEGERÄT · '+c[1],'BEREIT','Wählen Sie den ersten Arbeitsschritt.');
+  const sh=[...STEPS].sort(()=>Math.random()-.5);$('#sSteps').innerHTML='';
+  sh.forEach(s=>{const b=document.createElement('button');b.textContent=s.t;b.dataset.id=s.id;b.onclick=()=>step(s,b);$('#sSteps').appendChild(b);});
+}
+function msgS(t,c){$('#sMsg').innerHTML=`<div class="msg ${c}">${t}</div>`;}
+function ask(q,check,onOk){
+  S.wait=true;$('#sTask').innerHTML=`<div class="inp"><span>${q}</span><input id="sIn" inputmode="decimal"><button class="btn" id="sOk">Prüfen</button></div>`;
+  const go=()=>{const v=parseFloat($('#sIn').value.replace(',','.'));if(isNaN(v)){msgS('Bitte eine Zahl eingeben.','warn');return;}
+    const r=check(v);if(r===true){S.wait=false;$('#sTask').innerHTML='';onOk();}else{S.err++;$('#sErr').textContent='Fehler: '+S.err;msgS(r,'bad');}};
+  $('#sOk').onclick=go;$('#sIn').onkeydown=e=>{if(e.key==='Enter')go();};$('#sIn').focus();
+}
+function anim(from,to,ms,cb,done){const t0=Date.now();const id=setInterval(()=>{const k=Math.min(1,(Date.now()-t0)/ms);cb(from+(to-from)*k,k);if(k>=1){clearInterval(id);done&&done();}},40);}
+function step(s,b){
+  if(S.finished||S.wait||b.classList.contains('done'))return;
+  if(s.id!==S.next){S.err++;$('#sErr').textContent='Fehler: '+S.err;msgS('Noch nicht. '+HINT[S.next],'bad');return;}
+  b.classList.add('done');$('#sMsg').innerHTML='';S.next++;
+  const c=S.car;
+  switch(s.id){
+   case 1:screen('FUNKTIONSTEST','11,8 °C','Ausblastemperatur vorher (Soll ca. 4–8 °C) – Kühlleistung reduziert.');break;
+   case 2:screen('SICHTPRÜFUNG','i. O.','Kondensator sauber, keine ölfeuchten Stellen sichtbar.');break;
+   case 3:S.hoseL.setAttribute('opacity',1);S.hoseH.setAttribute('opacity',1);screen('DRUCKANZEIGE','LP 4,1  HP 4,1','bar · Ruhedruck (Motor aus)');break;
+   case 4:S.wait=true;anim(0,S.ist,2200,(v)=>{screen('ABSAUGEN · '+c[1],Math.round(v)+' g','Kältemittel wird abgesaugt, gereinigt und gewogen …');S.fill.setAttribute('y',235-v/12);S.fill.setAttribute('height',v/12);},()=>{
+      screen('ABSAUGEN BEENDET',S.ist+' g','Altöl: 12 ml');
+      ask(`Abgesaugt: ${S.ist} g, Soll ${c[2]} g. Kältemittelverlust in %?`,v=>{const p=(c[2]-S.ist)/c[2]*100;return Math.abs(v-p)<=0.6?true:'Rechnen Sie: (Soll − Ist) / Soll · 100 %.';},()=>{
+        const p=(c[2]-S.ist)/c[2]*100,pj=p/S.years;
+        msgS(`Richtig: ${fmt(p)} % Verlust in ${S.years} Jahren = ${fmt(pj)} % pro Jahr. ${pj>10?'Das ist <b>zu viel</b> – Verdacht auf ein Leck!':'Das ist ein normaler Verlust (bis ca. 10 % pro Jahr).'}`,pj>10?'warn':'ok');});});break;
+   case 5:ask(`Füllmenge ${c[2]} g. Evakuierzeit nach Faustregel (60 min je kg) in Minuten?`,v=>{const m=c[2]/1000*60;return Math.abs(v-m)<=1.5?true:'Faustregel: Füllmenge in kg · 60 min.';},()=>{
+      const m=Math.max(20,Math.round(c[2]/1000*60));S.wait=true;
+      anim(1013,8,2500,(v)=>screen('EVAKUIEREN',Math.round(v)+' mbar','Laufzeit '+m+' min (Zeitraffer) – Wasser verdampft im Vakuum.'),()=>{
+        if(S.leak){anim(8,95,2200,(v)=>screen('VAKUUM HALTEN',Math.round(v)+' mbar','Druck steigt an …'),()=>{
+          screen('VAKUUMTEST','NICHT I. O.','Druckanstieg: 8 → 95 mbar');
+          $('#sTask').innerHTML=`<div class="opts" style="margin-top:8px"><button id="lA">Trotzdem befüllen – der Kunde wartet</button><button id="lB">Nicht befüllen: Leck suchen und reparieren</button></div>`;
+          $('#lA').onclick=()=>{S.err++;$('#sErr').textContent='Fehler: '+S.err;msgS('Falsch! Eine undichte Anlage darf nicht befüllt werden – das Kältemittel würde in die Umwelt gelangen (Verstoß gegen F-Gase-Recht).','bad');};
+          $('#lB').onclick=()=>{S.wait=false;S.finished=true;$('#sTask').innerHTML='';screen('SERVICE ABGEBROCHEN','LECKSUCHE','Kunde informieren, Kostenvoranschlag für Reparatur.');msgS('Richtig entschieden! Das Vakuum hält nicht – die Anlage ist undicht. Erst Leck suchen (UV-Lampe/Formiergas) und reparieren, dann den Service wiederholen. Fehler insgesamt: '+S.err,'ok');};
+        });}
+        else{anim(8,9,1500,(v)=>screen('VAKUUM HALTEN',Math.round(v)+' mbar','20 min halten (Zeitraffer)'),()=>{S.wait=false;screen('VAKUUMTEST','I. O.','Anlage ist dicht. Weiter mit dem Befüllen.');msgS('Vakuum hält – die Anlage ist dicht.','ok');});}
+      });});break;
+   case 6:ask('Wie viel Kältemittel füllen Sie ein (g)?',v=>Math.abs(v-c[2])<=10?true:'Die Füllmenge steht auf dem Aufkleber im Motorraum – nicht die abgesaugte Menge nehmen!',()=>{
+      S.wait=true;anim(0,c[2],2000,(v)=>{screen('BEFÜLLEN · '+c[1],Math.round(v)+' g','Öl ergänzt: 12 ml + UV-Kontrastmittel');S.fill.setAttribute('y',235-(S.ist-v*S.ist/c[2])/12);S.fill.setAttribute('height',Math.max(0,(S.ist-v*S.ist/c[2])/12));},()=>{S.wait=false;msgS('Befüllt nach Herstellerangabe.','ok');});});break;
+   case 7:screen('FUNKTIONSTEST','5,2 °C','LP 0,9 bar · HP 12 bar · Kühlleistung i. O.');break;
+   case 8:S.hoseL.setAttribute('opacity',.15);S.hoseH.setAttribute('opacity',.15);S.finished=true;
+      screen('PROTOKOLL',c[1]+' '+c[2]+' g',`Abgesaugt ${S.ist} g · Vakuum i. O. · Befüllt ${c[2]} g\nAusblastemperatur 11,8 → 5,2 °C`);
+      msgS(`Klimaservice abgeschlossen! Fehler: ${S.err}. ${S.err===0?'Perfekt! 🏆':'Tipp: Schauen Sie sich die Reihenfolge noch einmal an.'}`,'ok');break;
+  }
+}
+$('#sNew').onclick=newService;newService();
+
+/* ================= TAB 4 RECHNER ================= */
+let gwp=1430;
+function updG(){const m=+$('#gM').value;$('#gMv').textContent=m+' g';const eq=m/1000*gwp;$('#gEq').textContent=(eq>=10?Math.round(eq).toLocaleString('de-DE'):fmt(eq,2))+' kg';
+  const km=eq/0.14;$('#gKm').textContent=(km>=10?Math.round(km).toLocaleString('de-DE'):fmt(km,1))+' km';}
+seg('#gRf',v=>{gwp=+v;updG();});$('#gM').oninput=updG;updG();
+
+/* ================= TAB 5 QUIZ ================= */
+const Q=[
+ ['Wo wird die Luft im Fahrzeug gekühlt?',['Im Kondensator','Im Verdampfer','Im Trockner','Im Kompressor'],1,'Im Verdampfer verdampft das Kältemittel und nimmt Wärme aus der Luft auf.'],
+ ['Was passiert im Kondensator?',['Das Kältemittel verdampft','Das Kältemittel wird verdichtet','Das Kältemittel gibt Wärme ab und wird flüssig','Feuchtigkeit wird gebunden'],2,'Kondensieren = Wärme abgeben, deshalb ist der Kondensator heiß.'],
+ ['Welche zwei Bauteile bilden die Grenze zwischen Hoch- und Niederdruckseite?',['Kondensator und Verdampfer','Kompressor und Expansionsventil','Trockner und Lüfter','Verdampfer und Trockner'],1,'Der Kompressor erhöht den Druck, das Expansionsventil senkt ihn.'],
+ ['Warum siedet R134a schon bei etwa –26 °C?',['Weil es giftig ist','Weil die Siedetemperatur vom Druck abhängt – bei 1 bar ist sie sehr niedrig','Weil es mit Öl gemischt ist','Weil es ein Gas ist'],1,'Niedriger Druck → niedrige Siedetemperatur. Darauf beruht die ganze Klimaanlage.'],
+ ['Manometer: ND 0,2 bar, HD 5 bar, Kupplung arbeitet. Wahrscheinlichste Ursache?',['Zu viel Kältemittel','Kondensator verschmutzt','Zu wenig Kältemittel','Kompressor defekt'],2,'Beide Drücke zu niedrig → Kältemittelmangel (Fall Opel Omega).'],
+ ['Im Stau steigt der Hochdruck. Warum?',['Der Verdampfer vereist','Kein Fahrtwind am Kondensator','Der Trockner ist voll','Der Kompressor läuft schneller'],1,'Ohne Fahrtwind wird weniger Wärme abgegeben.'],
+ ['Eine Anlage ist undicht. Was ist richtig?',['Bis zum nächsten Service nachfüllen','Erst Leck beseitigen, dann befüllen','Kältemittel ablassen und neu befüllen','Mit R1234yf auffüllen'],1,'Undichte Anlagen werden nie einfach nachgefüllt.'],
+ ['Wie lange wird eine Anlage mit 500 g Füllmenge nach Faustregel evakuiert?',['10 min','30 min','60 min','120 min'],1,'0,5 kg · 60 min/kg = 30 min (Vakuum mindestens 20 min halten).'],
+ ['Welches Kältemittel arbeitet mit bis zu ca. 130 bar?',['R134a','R1234yf','R744 (CO₂)','Alle gleich'],2,'CO₂ braucht sehr hohe Drücke – eigene Bauteile und Servicegeräte.'],
+ ['Warum wird R1234yf aktuell diskutiert?',['Es hat ein sehr hohes GWP','Es baut sich in der Luft zur langlebigen Chemikalie TFA (PFAS) ab','Es ist radioaktiv','Es ist seit 2017 verboten'],1,'Niedriges GWP, aber Abbauprodukt TFA – Studie Bristol 2026, ECHA-Einstufung 2026.'],
+ ['Warum sind Arbeiten in der Arbeitsgrube beim Klimaservice gefährlich?',['Kältemittel ist schwerer als Luft und verdrängt Sauerstoff','Wegen der Hochvoltbatterie','Weil es dort zu warm ist','Wegen des Ölnebels'],0,'Erstickungsgefahr – auch bei CO₂.'],
+ ['Welche Aufgabe hat der Trockner NICHT?',['Feuchtigkeit binden','Schmutz filtern','Vorrat an flüssigem Kältemittel','Kältemittel verdichten'],3,'Verdichten macht der Kompressor.']
+];
+let qi=0,qs=0,qOrder=[];
+function qStart(){qOrder=[...Q.keys()].sort(()=>Math.random()-.5);qi=0;qs=0;qShow();}
+function qShow(){
+  $('#qBar').style.width=(qi/Q.length*100)+'%';
+  if(qi>=Q.length){$('#qCnt').textContent=qs+' / '+Q.length;
+    $('#qBox').innerHTML=`<div class="msg ${qs>=9?'ok':qs>=6?'warn':'bad'}" style="font-size:18px"><b>${qs} von ${Q.length} Punkten</b> – ${qs>=11?'Klima-Profi! ❄️':qs>=9?'Sehr gut!':qs>=6?'Gut – schauen Sie sich die Fehler noch einmal an.':'Noch einmal Tab 1 und 2 durcharbeiten!'}</div><div class="row" style="margin-top:10px"><button class="btn" id="qAgain">Noch einmal</button></div>`;
+    $('#qAgain').onclick=qStart;return;}
+  const q=Q[qOrder[qi]];$('#qCnt').textContent='Frage '+(qi+1)+' / '+Q.length+' · Punkte '+qs;
+  $('#qBox').innerHTML=`<h3 style="font-size:18px;margin-top:0">${q[0]}</h3><div class="opts" id="qO"></div><div id="qF"></div>`;
+  let answered=false;
+  q[1].forEach((t,i)=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>{if(answered)return;answered=true;
+    const ok=i===q[2];if(ok)qs++;b.classList.add(ok?'right':'wrong');if(!ok)$('#qO').children[q[2]].classList.add('right');
+    $('#qF').innerHTML=`<div class="msg ${ok?'ok':'bad'}">${ok?'Richtig! ':'Leider falsch. '}${q[3]}</div><div class="row" style="margin-top:8px"><button class="btn" id="qN">Weiter</button></div>`;
+    $('#qN').onclick=()=>{qi++;qShow();};};$('#qO').appendChild(b);});
+}
+qStart();
+</script>
+</body>
+</html>
